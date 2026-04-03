@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+
+body {
+  background: #07090f;
+  color: #e2eeff;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar        { width: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #1e2d45; border-radius: 2px; }
+
+::selection { background: rgba(59,130,246,.25); }
+
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2.5 rounded-xl bg-tb-accent hover:bg-tb-accent2 text-white font-semibold text-sm transition-all active:scale-[.97] disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply px-4 py-2.5 rounded-xl bg-tb-surface border border-tb-border hover:border-tb-border2 text-tb-text font-semibold text-sm transition-all active:scale-[.97];
+  }
+  .btn-ghost {
+    @apply px-3 py-2 rounded-lg text-tb-dim hover:text-tb-text hover:bg-tb-surface text-sm transition-all;
+  }
+  .card {
+    @apply bg-tb-card border border-tb-border rounded-2xl;
+  }
+  .input {
+    @apply w-full bg-tb-surface border border-tb-border rounded-xl px-4 py-2.5 text-sm text-tb-text placeholder:text-tb-muted focus:outline-none focus:border-tb-accent/50 focus:ring-2 focus:ring-tb-accent/10 transition-all;
+  }
+  .label {
+    @apply block text-xs font-semibold text-tb-dim uppercase tracking-wider mb-1.5;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border;
+  }
+}
+
+.positive { color: #22c55e; }
+.negative { color: #ef4444; }
