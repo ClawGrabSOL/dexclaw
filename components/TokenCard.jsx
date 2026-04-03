@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Eye, ExternalLink, Globe } from 'lucide-react';
+import { TrendingUp, TrendingDown, Eye, ExternalLink, Zap } from 'lucide-react';
 
 function fmt(n) {
   if (!n && n !== 0) return '—';
@@ -15,89 +15,143 @@ function fmt(n) {
   return '$' + num.toFixed(2);
 }
 
-const CHAIN_COLORS = {
-  solana:   'bg-purple-500/15 text-purple-400 border-purple-500/25',
-  ethereum: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
-  base:     'bg-sky-500/15 text-sky-400 border-sky-500/25',
-  bsc:      'bg-yellow-500/15 text-yellow-400 border-yellow-500/25',
-  polygon:  'bg-violet-500/15 text-violet-400 border-violet-500/25',
-  avalanche:'bg-red-500/15 text-red-400 border-red-500/25',
+const CHAIN_STYLES = {
+  solana:    { dot: '#9945FF', label: 'SOL' },
+  ethereum:  { dot: '#627EEA', label: 'ETH' },
+  base:      { dot: '#0052FF', label: 'BASE' },
+  bsc:       { dot: '#F3BA2F', label: 'BSC' },
+  polygon:   { dot: '#8247E5', label: 'POLY' },
+  avalanche: { dot: '#E84142', label: 'AVAX' },
+  arbitrum:  { dot: '#28A0F0', label: 'ARB' },
+  optimism:  { dot: '#FF0420', label: 'OP' },
 };
 
-export default function TokenCard({ token }) {
-  const [price, setPrice] = useState(null);
+export default function TokenCard({ token, index = 0 }) {
+  const [price,   setPrice]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     fetch(`/api/price/${token.address}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => d && setPrice(d))
-      .catch(() => {});
+      .then(d => { setPrice(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [token.address]);
 
-  const chainCls = CHAIN_COLORS[token.chain] || 'bg-tb-surface text-tb-dim border-tb-border';
-  const change   = price ? parseFloat(price.price_change_24h) : null;
-  const isPos    = change !== null && change >= 0;
+  const chain  = CHAIN_STYLES[token.chain] || { dot: '#888', label: token.chain?.toUpperCase() };
+  const change = price ? parseFloat(price.price_change_24h) : null;
+  const isPos  = change !== null && change >= 0;
 
   return (
     <Link href={`/token/${token.address}`}
-      className="card p-4 hover:border-tb-border2 hover:bg-tb-card/80 transition-all group flex flex-col gap-3 cursor-pointer">
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="group block card glow-hover animate-fade-in cursor-pointer"
+      style={{ animationDelay: `${index * 40}ms` }}>
 
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        {token.logo_url ? (
-          <img src={token.logo_url} alt={token.symbol}
-            className="w-11 h-11 rounded-xl object-cover border border-tb-border shrink-0" />
-        ) : (
-          <div className="w-11 h-11 rounded-xl bg-tb-accent/15 border border-tb-accent/25 flex items-center justify-center shrink-0">
-            <span className="text-tb-accent font-bold text-sm">{token.symbol?.slice(0,2)}</span>
+      {/* Top gradient line on hover */}
+      <div className={`absolute top-0 left-0 right-0 h-px transition-opacity duration-300 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent)' }} />
+
+      <div className="p-4">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-3">
+          {token.logo_url ? (
+            <img src={token.logo_url} alt={token.symbol}
+              className="w-10 h-10 rounded-xl object-cover border border-dc-border shrink-0 transition-transform group-hover:scale-105" />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-dc-surface border border-dc-border flex items-center justify-center shrink-0 transition-all group-hover:border-dc-border2">
+              <span className="text-white font-black text-sm">{token.symbol?.slice(0, 2)}</span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-white text-sm truncate">{token.name}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: chain.dot }} />
+                <span className="text-[9px] font-bold text-dc-dim tracking-wider">{chain.label}</span>
+              </div>
+            </div>
+            <span className="text-[11px] text-dc-muted font-mono">${token.symbol}</span>
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-tb-text text-[15px] leading-tight">{token.name}</span>
-            <span className={`badge ${chainCls}`}>{token.chain}</span>
-          </div>
-          <span className="text-xs text-tb-dim font-mono">${token.symbol}</span>
+          <ExternalLink size={13} className="text-dc-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0 -translate-y-px" />
         </div>
-        <ExternalLink size={14} className="text-tb-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-      </div>
 
-      {/* Price row */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-mono font-bold text-tb-text text-base">
-            {price ? fmt(price.price_usd) : <span className="text-tb-muted text-sm">Loading...</span>}
-          </p>
-          {change !== null && (
-            <span className={`flex items-center gap-0.5 text-xs font-semibold font-mono mt-0.5 ${isPos ? 'positive' : 'negative'}`}>
-              {isPos ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-              {isPos ? '+' : ''}{change.toFixed(2)}%
-            </span>
+        {/* Price */}
+        <div className="mb-3">
+          {loading ? (
+            <div className="space-y-1.5">
+              <div className="skeleton h-5 w-24" />
+              <div className="skeleton h-3 w-16" />
+            </div>
+          ) : price ? (
+            <>
+              <p className="font-mono font-black text-white text-lg leading-none">{fmt(price.price_usd)}</p>
+              {change !== null && (
+                <span className={`flex items-center gap-0.5 text-[11px] font-bold font-mono mt-1 ${isPos ? 'positive' : 'negative'}`}>
+                  {isPos ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+                  {isPos ? '+' : ''}{change.toFixed(2)}%
+                </span>
+              )}
+            </>
+          ) : (
+            <p className="text-[12px] text-dc-muted">No price data</p>
           )}
         </div>
-        <div className="text-right">
-          {price?.market_cap && <p className="text-[11px] text-tb-muted">MCap <span className="text-tb-dim">{fmt(price.market_cap)}</span></p>}
-          {price?.volume_24h && <p className="text-[11px] text-tb-muted">Vol <span className="text-tb-dim">{fmt(price.volume_24h)}</span></p>}
+
+        {/* Stats */}
+        {price && (
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {[
+              ['MCap',    fmt(price.market_cap)],
+              ['Vol 24h', fmt(price.volume_24h)],
+            ].map(([l, v]) => (
+              <div key={l} className="bg-dc-surface rounded-lg px-2.5 py-1.5">
+                <p className="text-[9px] text-dc-muted uppercase tracking-wider">{l}</p>
+                <p className="text-[12px] text-white font-mono font-semibold">{v}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Description */}
+        {token.description && (
+          <p className="text-[11px] text-dc-dim leading-relaxed line-clamp-2 mb-3">{token.description}</p>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-2.5 border-t border-dc-border">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {token.dex_links?.slice(0, 3).map((l, i) => (
+              <span key={i} className="text-[9px] bg-dc-surface border border-dc-border px-1.5 py-0.5 rounded-md text-dc-dim font-semibold uppercase tracking-wide">
+                {l.name}
+              </span>
+            ))}
+            {!token.dex_links?.length && (
+              <span className="text-[10px] text-dc-muted">No DEX links</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-dc-muted">
+            <Eye size={9} /> {token.views || 0}
+          </div>
         </div>
       </div>
 
-      {/* Description */}
-      {token.description && (
-        <p className="text-xs text-tb-dim leading-relaxed line-clamp-2">{token.description}</p>
-      )}
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-1 border-t border-tb-border">
-        <div className="flex items-center gap-1.5">
-          {token.dex_links?.slice(0,3).map((l, i) => (
-            <span key={i} className="text-[10px] bg-tb-surface border border-tb-border px-1.5 py-0.5 rounded text-tb-muted">{l.name}</span>
+      {/* Hover buy overlay */}
+      {token.dex_links?.length > 0 && (
+        <div className={`absolute inset-x-0 bottom-0 flex transition-all duration-200 ${hovered ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          {token.dex_links.slice(0, 2).map((l, i) => (
+            <a key={i} href={l.url} target="_blank" rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-bold transition-colors ${
+                i === 0 ? 'bg-white text-black hover:bg-dc-white2' : 'bg-dc-card2 border-t border-l border-dc-border text-white hover:bg-dc-card'
+              }`}>
+              <Zap size={10} strokeWidth={2.5} />
+              Buy on {l.name}
+            </a>
           ))}
         </div>
-        <div className="flex items-center gap-1 text-[11px] text-tb-muted">
-          <Eye size={10} />
-          {token.views || 0}
-        </div>
-      </div>
+      )}
     </Link>
   );
 }
